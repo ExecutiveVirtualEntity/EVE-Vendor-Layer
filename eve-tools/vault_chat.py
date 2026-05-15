@@ -5,8 +5,8 @@ Combines vault_ask.py (Chroma retrieval) with ask_local.py (Ollama) to answer
 natural-language questions grounded in the vault content.
 
 Usage:
-    vault_chat.py "what did we agree on for the Wheaton rent schedule?"
-    vault_chat.py "summarize the Van Emmon deal in 5 bullets"
+    vault_chat.py "what did we agree on for the rent schedule?"
+    vault_chat.py "summarize the active deal in 5 bullets"
     vault_chat.py "what's outstanding on the Germany trip?" --top 8 --show-sources
 """
 

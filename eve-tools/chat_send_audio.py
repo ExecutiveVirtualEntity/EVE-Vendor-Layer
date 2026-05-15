@@ -81,7 +81,7 @@ def send_message_with_attachment(token: str, space_id: str, text: str,
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--space", required=True, help="e.g. spaces/AAQA5xkWJq0")
+    ap.add_argument("--space", required=True, help="e.g. spaces/XXXXXXXX")
     ap.add_argument("--file", required=True)
     ap.add_argument("--text", default="")
     ap.add_argument("--content-type", default=None,

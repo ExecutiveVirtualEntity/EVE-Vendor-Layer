@@ -80,16 +80,21 @@ Schema: `eve-tools/instance.env.example` (canonical) + `eve-tools/eve_config.py`
 | `research_property.py` | 2 (docstring example + User-Agent) | ✓ sanitized — uses `EVE_USER_AGENT` + `EVE_VAULT`; docstring example genericized |
 | `backup_to_drive.py` | 3 (creds file path + Drive folder ID + vault path) | ✓ sanitized — uses `EVE_BACKUP_CREDS_FILE`, `EVE_BACKUP_FOLDER_ID`, `EVE_VAULT` |
 | `daily_brief.py` | 5 (Alex WA JID, Chat space, 3 team emails) | ✓ sanitized — ACCOUNTS list built dynamically from `get_team_members()`; recipient JID + Chat space derived from first team member. NOTE: behavior change — now scans every team member's calendar/mail per their scopes, not just Alex+Eve. |
-| `bts_sweep.py` | 0 in this grep | re-audit with broader patterns |
-| `chat_send_audio.py` | 1 (docstring example only) | re-audit |
-| `deal_status.py` | 0 in this grep | re-audit |
-| `lease_abstract.py` | 0 in this grep | re-audit |
-| `plaud_ingest.py` | 0 in this grep | re-audit |
-| `underwrite.py` | 0 in this grep | re-audit |
-| `vault_chat.py` | 1 hit (line not surfaced in first grep) | re-audit |
-| `vault_index.py` | 0 in this grep | re-audit |
+| `bts_sweep.py` | 0 | ✓ clean (broad audit confirmed) |
+| `chat_send_audio.py` | 1 (docstring example) | ✓ sanitized — example chat space ID genericized |
+| `deal_status.py` | 0 | ✓ clean |
+| `lease_abstract.py` | 0 | ✓ clean |
+| `plaud_ingest.py` | 0 | ✓ clean |
+| `underwrite.py` | 1 (docstring example) | ✓ sanitized — example property address genericized |
+| `vault_chat.py` | 2 (docstring examples) | ✓ sanitized — example questions genericized |
+| `vault_index.py` | 0 | ✓ clean |
+| `prompt_seed.py` | 4 (L&R-flavored story prompts) | partial — TODO comment added; full refactor (externalize PROMPTS list to YAML) deferred to a future commit |
 
 Plus `bridges/sharedbrain/server.js` — Node, separate pattern (not eve_config); audit + sanitize TBD.
+
+### Status as of 2026-05-15
+
+13 of 14 eve-tools scripts fully sanitized. `prompt_seed.py` flagged for a structural refactor (move PROMPTS data into a customer-supplied YAML) — *must complete before customer #2 onboards*. `bridges/sharedbrain/server.js` still pending its own audit.
 
 Plus `bridges/sharedbrain/server.js` — separate sanitization needed (Node, not Python).
 

@@ -2,7 +2,7 @@
 """Simple CRE underwriting helper — 10-year pro forma from a YAML/JSON config.
 
 Input config (YAML or JSON):
-    name: "300 S Carlton Ave, Wheaton — BTS Refresh"
+    name: "123 Main St, Anywhere, IL — BTS Refresh"
     price: 1_800_000        # purchase price $
     closing_costs_pct: 0.02 # % of price (default 0.02)
     noi_y1: 144_000         # Year-1 NOI $

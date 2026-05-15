@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
+# TODO (sanitization, before customer #2):
+#   The PROMPTS list below contains L&R-instance-flavored personal stories
+#   (mentions team members + a property by name). The structure of the script
+#   is vendor-layer; the *content* is instance-layer. Refactor to load prompts
+#   from a customer-supplied YAML file (e.g. ~/.config/eve/prompt_seed.yaml),
+#   matching how cadence_model.yaml and interest_profile.yaml already work.
 """Seed Eve-originated reflective prompts into the knowledge DB as 'items'.
 
 Unlike RSS items (pulled from external feeds), these are conversation seeds
-Eve carries — short prompts she can adapt at send-time to ask Alex or Shawn
+Eve carries — short prompts she can adapt at send-time to ask team members
 something personal or reflective. They live in the same `items` table with a
 distinguishing `source = 'eve_prompts'` marker, so the relevance scorer +
 cadence recommender treat them like any other item but the Phase 3 outreach
