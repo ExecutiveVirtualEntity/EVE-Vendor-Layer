@@ -6,7 +6,7 @@
 # persona) is handled separately by the dashboard (Phase 2.5).
 #
 # Usage:
-#   git clone git@github.com:EvolvingVirtualEntity/EVE-Vendor-Layer.git ~/eve-vendor-layer
+#   git clone git@github.com:ExecutiveVirtualEntity/EVE-Vendor-Layer.git ~/eve-vendor-layer
 #   cd ~/eve-vendor-layer
 #   ./install.sh
 

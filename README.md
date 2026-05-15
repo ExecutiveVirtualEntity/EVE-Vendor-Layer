@@ -1,6 +1,6 @@
 # E.V.E. — Vendor Layer
 
-Platform-layer files for **E.V.E.** (Evolving Virtual Entity) — the AI-teammate technology offered by *Evolving Virtual Entity LLC* (Washington, in formation).
+Platform-layer files for **E.V.E.** (Executive Virtual Entity) — the AI-teammate technology offered by *Executive Virtual Entity LLC* (Washington, in formation).
 
 ## What this repo is
 
@@ -10,7 +10,7 @@ This repo holds the **vendor layer**: files that are identical across every cust
 
 | Layer | Owner | Examples |
 |---|---|---|
-| **Vendor company** | Evolving Virtual Entity LLC | This repo. The business behind the platform. |
+| **Vendor company** | Executive Virtual Entity LLC | This repo. The business behind the platform. |
 | **Platform / product** | This repo | `CLAUDE.base.md`, vendor memory files, eve-tools scripts, bridges, install + update scripts. Pushed to all customer boxes. |
 | **Instance** | Each customer | Their name (L&R picked *Eve*), persona, voice, vault, OAuth tokens. Never committed here. |
 
