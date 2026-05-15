@@ -44,10 +44,12 @@ import yaml
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import pulse_recommend  # type: ignore  # noqa: E402
 
+from eve_config import EVE_INSTANCE_EMAIL  # noqa: E402
+
 EVE_TOOLS = pathlib.Path.home() / ".local" / "eve-tools"
 DB_PATH = EVE_TOOLS / "eve-knowledge.db"
 CADENCE_FILE = EVE_TOOLS / "cadence_model.yaml"
-EVE_EMAIL = "Eve@labrasseurandreich.com"
+EVE_EMAIL = EVE_INSTANCE_EMAIL
 
 
 def credentials_dir() -> pathlib.Path:
@@ -66,7 +68,7 @@ def load_eve_credentials():
     if not path.exists():
         raise FileNotFoundError(
             f"Eve's credentials not found at {path}. Ensure the Workspace MCP "
-            "has been authorized for Eve@labrasseurandreich.com."
+            f"has been authorized for {EVE_EMAIL}."
         )
     creds = Credentials.from_authorized_user_file(str(path))
     if not creds.valid:

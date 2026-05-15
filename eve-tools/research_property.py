@@ -9,11 +9,11 @@ All data sources are free and keyless:
   * OSM Overpass API — nearby POIs within a radius
 
 Usage:
-    research_property.py "300 S Carlton Ave, Wheaton, IL"
-    research_property.py "111 E Van Emmon St, Yorkville, IL" --radius 1200
-    research_property.py "<addr>" --out ~/EveBrain/.../brief.md
+    research_property.py "300 S Main St, Anywhere, IL"
+    research_property.py "<addr>" --radius 1200
+    research_property.py "<addr>" --out <vault>/04-Resources/.../brief.md
 
-Output: Markdown brief under ~/EveBrain/04-Resources/Property-Research/ by default.
+Output: Markdown brief under $EVE_VAULT/04-Resources/Property-Research/ by default.
 """
 
 import argparse
@@ -26,8 +26,10 @@ import time
 
 import requests
 
-USER_AGENT = "Eve-L&R/1.0 (property-research; alexander.reich@labrasseurandreich.com)"
-DEFAULT_OUT_DIR = pathlib.Path.home() / "EveBrain" / "04-Resources" / "Property-Research"
+from eve_config import EVE_USER_AGENT, EVE_VAULT
+
+USER_AGENT = EVE_USER_AGENT
+DEFAULT_OUT_DIR = pathlib.Path(EVE_VAULT) / "04-Resources" / "Property-Research"
 
 # POI categories to pull via Overpass API.
 # key=tag-expression; value=human label.

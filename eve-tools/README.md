@@ -75,19 +75,21 @@ Schema: `eve-tools/instance.env.example` (canonical) + `eve-tools/eve_config.py`
 
 | Script | L&R hits | Status |
 |---|---|---|
-| `assemble-claude.sh` (repo root) | 1 (VAULT path) | ✓ sanitized — falls back to `${HOME}/EveBrain` if `instance.env` missing |
-| `backup_to_drive.py` | 2 (creds file path + vault path) | TODO |
-| `bts_sweep.py` | 0 in this grep (broader pass may find more) | re-audit |
-| `chat_send_audio.py` | 1 (just docstring example — likely fine) | re-audit |
-| `daily_brief.py` | 5 (Alex WA JID, Chat space, 3 team emails) | TODO — biggest |
+| `assemble-claude.sh` (repo root) | 1 (VAULT path) | ✓ sanitized — safe fallback to `${HOME}/EveBrain` |
+| `pulse_outreach.py` | 2 (Eve email twice) | ✓ sanitized — uses `EVE_INSTANCE_EMAIL` |
+| `research_property.py` | 2 (docstring example + User-Agent) | ✓ sanitized — uses `EVE_USER_AGENT` + `EVE_VAULT`; docstring example genericized |
+| `backup_to_drive.py` | 3 (creds file path + Drive folder ID + vault path) | ✓ sanitized — uses `EVE_BACKUP_CREDS_FILE`, `EVE_BACKUP_FOLDER_ID`, `EVE_VAULT` |
+| `daily_brief.py` | 5 (Alex WA JID, Chat space, 3 team emails) | ✓ sanitized — ACCOUNTS list built dynamically from `get_team_members()`; recipient JID + Chat space derived from first team member. NOTE: behavior change — now scans every team member's calendar/mail per their scopes, not just Alex+Eve. |
+| `bts_sweep.py` | 0 in this grep | re-audit with broader patterns |
+| `chat_send_audio.py` | 1 (docstring example only) | re-audit |
 | `deal_status.py` | 0 in this grep | re-audit |
 | `lease_abstract.py` | 0 in this grep | re-audit |
 | `plaud_ingest.py` | 0 in this grep | re-audit |
-| `pulse_outreach.py` | 2 (Eve email twice) | TODO |
-| `research_property.py` | 2 (docstring example + User-Agent) | TODO — User-Agent matters |
 | `underwrite.py` | 0 in this grep | re-audit |
-| `vault_chat.py` | 1 (one hit, line not surfaced) | re-audit |
+| `vault_chat.py` | 1 hit (line not surfaced in first grep) | re-audit |
 | `vault_index.py` | 0 in this grep | re-audit |
+
+Plus `bridges/sharedbrain/server.js` — Node, separate pattern (not eve_config); audit + sanitize TBD.
 
 Plus `bridges/sharedbrain/server.js` — separate sanitization needed (Node, not Python).
 

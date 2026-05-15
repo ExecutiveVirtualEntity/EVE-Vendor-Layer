@@ -107,6 +107,7 @@ EVE_BACKUP_CREDS_FILE: str = _opt(
         / f"{EVE_INSTANCE_EMAIL}.json"
     ),
 ) or ""
+EVE_BACKUP_FOLDER_ID: str | None = _opt("EVE_BACKUP_FOLDER_ID")
 EVE_BACKUP_LABEL: str = _opt("EVE_BACKUP_LABEL", "EveBrain") or "EveBrain"
 
 # ─── User-agent for outbound HTTP ──────────────────────────────────────────

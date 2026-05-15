@@ -19,22 +19,39 @@ import sys
 import urllib.request
 import zoneinfo
 
-sys.path.insert(0, "/home/eve/.local/eve-tools")
+sys.path.insert(0, str(pathlib.Path.home() / ".local" / "eve-tools"))
 from pulse_outreach import credentials_dir, send_chat_message  # noqa: E402
+from eve_config import (  # noqa: E402
+    EVE_INSTANCE_EMAIL,
+    EVE_INSTANCE_NAME,
+    EVE_VAULT,
+    get_team_members,
+)
 
-# WhatsApp destination — Alex's DM JID. Bridge accepts either phone or JID.
-ALEX_WA_JID = "133324425179144@lid"
+# Primary recipient of the daily brief = first team member configured.
+# (For multi-recipient delivery in the future, iterate over get_team_members().)
+_team = get_team_members()
+if not _team:
+    raise RuntimeError(
+        "daily_brief.py: no team members configured. Set EVE_TEAM_1_* in "
+        "~/.config/eve/instance.env."
+    )
+_recipient = _team[0]
+RECIPIENT_WA_JID = _recipient.whatsapp_jid  # may be None if not configured
 WA_BRIDGE_URL = "http://127.0.0.1:8080/api/send"
-# Legacy Chat fallback target if WA send fails
-SPACE = "spaces/AAQA5xkWJq0"  # EvE chat
-# Per-account scope. Alex's personal account is calendar-only by design
-# (Gmail/People scopes intentionally not granted — confirmed 2026-05-02).
-ACCOUNTS = [
-    ("alexander.reich@labrasseurandreich.com", "Alex (work)", {"calendar", "mail"}),
-    ("alexander.reich.la@gmail.com", "Alex (personal)", {"calendar"}),
-    ("Eve@labrasseurandreich.com", "Eve", {"calendar", "mail"}),
-]
-PEOPLE_DIR = pathlib.Path.home() / "EveBrain" / "03-People"
+# Chat fallback if WhatsApp send fails.
+RECIPIENT_CHAT_SPACE = _recipient.chat_space
+
+# Per-account scope mapping. Each team member's primary email gets their
+# declared scopes; personal email (if any) is calendar-only by convention.
+ACCOUNTS: list[tuple[str, str, set[str]]] = []
+for _m in _team:
+    ACCOUNTS.append((_m.email, f"{_m.name} (work)", set(_m.scopes)))
+    if _m.personal_email:
+        ACCOUNTS.append((_m.personal_email, f"{_m.name} (personal)", {"calendar"}))
+ACCOUNTS.append((EVE_INSTANCE_EMAIL, EVE_INSTANCE_NAME, {"calendar", "mail"}))
+
+PEOPLE_DIR = pathlib.Path(EVE_VAULT) / "03-People"
 PT = zoneinfo.ZoneInfo("America/Los_Angeles")
 
 MONTHS = {m: i for i, m in enumerate(
@@ -305,12 +322,12 @@ def main():
     brief = format_brief(now, calendars, mails, birthdays)
     print(brief)
     print("---")
-    print(f"[{now.isoformat()}] posting to WhatsApp {ALEX_WA_JID}")
-    if send_whatsapp(ALEX_WA_JID, brief):
+    print(f"[{now.isoformat()}] posting to WhatsApp {RECIPIENT_WA_JID}")
+    if send_whatsapp(RECIPIENT_WA_JID, brief):
         print("[ok] sent via WhatsApp")
         return
-    print(f"[warn] WhatsApp send failed, falling back to Chat {SPACE}")
-    send_chat_message(SPACE, brief)
+    print(f"[warn] WhatsApp send failed, falling back to Chat {RECIPIENT_CHAT_SPACE}")
+    send_chat_message(RECIPIENT_CHAT_SPACE, brief)
     print("[ok] sent via Chat fallback")
 
 

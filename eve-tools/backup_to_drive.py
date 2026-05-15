@@ -33,22 +33,30 @@ import tempfile
 import urllib.parse
 import urllib.request
 
+from eve_config import EVE_BACKUP_CREDS_FILE, EVE_BACKUP_FOLDER_ID, EVE_VAULT  # noqa: E402
+
 EVE_TOOLS = pathlib.Path.home() / ".local" / "eve-tools"
 LOG = EVE_TOOLS / "cron-backup.log"
 PASSPHRASE_FILE = pathlib.Path.home() / ".config" / "eve" / "backup-passphrase"
-CREDS_FILE = pathlib.Path.home() / ".google_workspace_mcp" / "credentials" / "Eve@labrasseurandreich.com.json"
-BACKUP_FOLDER_ID = "1sCrGG5S9M_f07FOpaGdYv8lQ_Y4Q_-fd"   # "Eve Backups (encrypted)"
+CREDS_FILE = pathlib.Path(EVE_BACKUP_CREDS_FILE)
+BACKUP_FOLDER_ID = EVE_BACKUP_FOLDER_ID
 KEEP_N_DEFAULT = 30
+
+if not BACKUP_FOLDER_ID:
+    raise RuntimeError(
+        "EVE_BACKUP_FOLDER_ID is not set in ~/.config/eve/instance.env. "
+        "Create a backup folder in Google Drive, copy its ID, and set the env var."
+    )
 
 SOURCES: list[tuple[str, str]] = [
     # (label, absolute path)
-    ("EveBrain", "/home/eve/EveBrain"),
-    ("eve-tools", "/home/eve/.local/eve-tools"),
-    ("config-eve", "/home/eve/.config/eve"),
-    ("claude-memory", "/home/eve/.claude/projects/-home-eve-EveBrain/memory"),
-    ("pm2-dump", "/home/eve/.pm2/dump.pm2"),
-    ("remote", "/home/eve/remote"),
-    ("tools", "/home/eve/tools"),
+    ("EveBrain", EVE_VAULT),
+    ("eve-tools", str(pathlib.Path.home() / ".local" / "eve-tools")),
+    ("config-eve", str(pathlib.Path.home() / ".config" / "eve")),
+    ("claude-memory", str(pathlib.Path.home() / ".claude" / "projects" / "-home-eve-EveBrain" / "memory")),
+    ("pm2-dump", str(pathlib.Path.home() / ".pm2" / "dump.pm2")),
+    ("remote", str(pathlib.Path.home() / "remote")),
+    ("tools", str(pathlib.Path.home() / "tools")),
 ]
 
 EXCLUDES = [
