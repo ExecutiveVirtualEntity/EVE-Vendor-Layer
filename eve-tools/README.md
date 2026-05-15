@@ -49,22 +49,52 @@ Some scripts read YAML / DB / cache files that live in the *instance layer*, not
 
 install.sh creates the empty dirs; the dashboard (Phase 2.5) handles populating the configs.
 
-## TODO — sanitization pass before customer #2
+## Sanitization — templatizing customer-specific strings
 
-The following scripts currently contain hardcoded L&R-specific strings (paths, emails, Chat space IDs, project references). They run fine on the L&R box, but **must be templatized before deploying to any other customer**. Tracked separately; first cleanup wave is the next Phase 2 commit.
+Vendor-layer scripts must NOT contain hardcoded customer-specific strings (emails, vault path, Chat space IDs, WhatsApp JIDs, etc.). Each customer instance reads its own values from `~/.config/eve/instance.env` (populated by the onboarding dashboard in Phase 2.5; hand-edited for now).
 
-- assemble-claude.sh (repo root)
-- backup_to_drive.py
-- bts_sweep.py
-- chat_send_audio.py
-- daily_brief.py
-- deal_status.py
-- lease_abstract.py
-- plaud_ingest.py
-- pulse_outreach.py
-- research_property.py
-- underwrite.py
-- vault_chat.py
-- vault_index.py
+### Pattern
 
-The templatization pattern: replace hardcoded strings with environment variables loaded from `~/.config/eve/instance.env` (customer-supplied) or `~/EveBrain/CLAUDE.user.md` parsed values.
+**Python scripts:**
+```python
+from eve_config import EVE_INSTANCE_EMAIL, EVE_VAULT, get_team_members
+# Use the constants directly. eve_config raises EveConfigError at import
+# time if a required key is missing — fail loud, never silently fall back
+# to a hardcoded value.
+```
+
+**Shell scripts:**
+```bash
+[[ -f "${HOME}/.config/eve/instance.env" ]] && source "${HOME}/.config/eve/instance.env"
+VAULT="${EVE_VAULT:-${HOME}/EveBrain}"  # safe default; required keys should NOT fall back
+```
+
+Schema: `eve-tools/instance.env.example` (canonical) + `eve-tools/eve_config.py` (Python loader).
+
+### Progress (13 scripts + 1 in repo root)
+
+| Script | L&R hits | Status |
+|---|---|---|
+| `assemble-claude.sh` (repo root) | 1 (VAULT path) | ✓ sanitized — falls back to `${HOME}/EveBrain` if `instance.env` missing |
+| `backup_to_drive.py` | 2 (creds file path + vault path) | TODO |
+| `bts_sweep.py` | 0 in this grep (broader pass may find more) | re-audit |
+| `chat_send_audio.py` | 1 (just docstring example — likely fine) | re-audit |
+| `daily_brief.py` | 5 (Alex WA JID, Chat space, 3 team emails) | TODO — biggest |
+| `deal_status.py` | 0 in this grep | re-audit |
+| `lease_abstract.py` | 0 in this grep | re-audit |
+| `plaud_ingest.py` | 0 in this grep | re-audit |
+| `pulse_outreach.py` | 2 (Eve email twice) | TODO |
+| `research_property.py` | 2 (docstring example + User-Agent) | TODO — User-Agent matters |
+| `underwrite.py` | 0 in this grep | re-audit |
+| `vault_chat.py` | 1 (one hit, line not surfaced) | re-audit |
+| `vault_index.py` | 0 in this grep | re-audit |
+
+Plus `bridges/sharedbrain/server.js` — separate sanitization needed (Node, not Python).
+
+### Conversion checklist for each script
+
+1. Grep the script for: `labrasseur`, `alexander\.reich`, `shawn\.labrasseur`, `EveBrain`, `spaces/AAQA`, `spaces/xirOw`, `133324425179144`, `L&R`, `Van Emmon`, `Yorkville`, `UA 907`, `UA 8718`, any project/property name
+2. For each hit, replace with `eve_config` constant or `os.getenv` + assertion
+3. If the script needs a new config key, add it to `instance.env.example` and `eve_config.py`
+4. Test locally with an instance.env in place
+5. Mark ✓ in the table above + commit

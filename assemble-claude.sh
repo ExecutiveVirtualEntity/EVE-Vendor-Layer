@@ -5,7 +5,10 @@
 
 set -euo pipefail
 
-VAULT="/home/eve/EveBrain"
+# Customer-layer config (optional — script falls back to default vault path)
+[[ -f "${HOME}/.config/eve/instance.env" ]] && source "${HOME}/.config/eve/instance.env"
+
+VAULT="${EVE_VAULT:-${HOME}/EveBrain}"
 BASE="$VAULT/CLAUDE.base.md"
 USER="$VAULT/CLAUDE.user.md"
 OUT="$VAULT/CLAUDE.md"
