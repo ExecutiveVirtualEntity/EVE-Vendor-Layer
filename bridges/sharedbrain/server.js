@@ -2,9 +2,42 @@ const express = require('express');
 const { WebSocketServer } = require('ws');
 const pty = require('node-pty');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+// --- Load customer-layer config from ~/.config/eve/instance.env ---
+// Minimal KEY=VALUE parser (quoted + ${VAR} expansion). Mirrors the schema
+// documented in eve-tools/instance.env.example. Missing file is fine —
+// only EVE_VAULT is consumed by this server and it has a safe default.
+function loadInstanceEnv() {
+  const p = path.join(os.homedir(), '.config', 'eve', 'instance.env');
+  if (!fs.existsSync(p)) return;
+  const loaded = {};
+  for (const raw of fs.readFileSync(p, 'utf8').split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq < 0) continue;
+    const key = line.slice(0, eq).trim();
+    let val = line.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    val = val.replace(/\$\{([A-Z0-9_]+)\}/g, (_m, k) => loaded[k] || process.env[k] || '');
+    loaded[key] = val;
+    if (!process.env[key]) process.env[key] = val;
+  }
+}
+loadInstanceEnv();
+
+const EVE_VAULT = process.env.EVE_VAULT || path.join(os.homedir(), 'EveBrain');
 
 // --- Config ---
 const PORT = 3000;
+// TODO (security): move SECRET_TOKEN to instance.env (e.g. EVE_SHAREDBRAIN_TOKEN)
+// before customer #2 — currently hardcoded as a literal in source.
 const SECRET_TOKEN = '$haredBr@in2026';
 const COOLDOWN_MS = 3000;
 
@@ -13,7 +46,7 @@ const shell = pty.spawn('bash', [], {
   name: 'xterm-256color',
   cols: 220,
   rows: 50,
-  cwd: '/home/eve/remote',
+  cwd: path.join(os.homedir(), 'remote'),
   env: {
     ...process.env,
     TERM: 'xterm-256color',
@@ -52,7 +85,7 @@ function broadcastControlState() {
 }
 
 function startClaude() {
-  shell.write('cd /home/eve/EveBrain && claude --dangerously-skip-permissions');
+  shell.write(`cd ${EVE_VAULT} && claude --dangerously-skip-permissions`);
   setTimeout(() => { shell.write('\r'); }, 500);
 }
 

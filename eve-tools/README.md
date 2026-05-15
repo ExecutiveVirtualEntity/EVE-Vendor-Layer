@@ -92,11 +92,11 @@ Schema: `eve-tools/instance.env.example` (canonical) + `eve-tools/eve_config.py`
 | `vault_index.py` | 0 | ✓ clean |
 | `prompt_seed.py` | 4 (L&R-flavored story prompts) | ✓ refactored — PROMPTS list externalized to `~/.config/eve/prompt_seed.yaml` (customer-layer); schema in `prompt_seed.example.yaml` |
 
-Plus `bridges/sharedbrain/server.js` — Node, separate pattern (not eve_config); audit + sanitize TBD.
+Plus `bridges/sharedbrain/server.js` — ✓ sanitized: minimal inline parser for `~/.config/eve/instance.env` at module load; vault path reads `EVE_VAULT`; cwd uses `path.join(os.homedir(), 'remote')`. TODO flagged in source: move `SECRET_TOKEN` literal into `instance.env` (security improvement, not a customer-leak).
 
 ### Status as of 2026-05-15
 
-All 14 eve-tools scripts fully sanitized. `bridges/sharedbrain/server.js` still pending its own audit (Node, separate pattern from eve_config).
+*All 14 eve-tools scripts + sharedbrain server.js fully sanitized.* Only remaining sanitization item is the SECRET_TOKEN in server.js (security hygiene, not a customer-leak) — can wait until Phase 2.5 dashboard implementation.
 
 Plus `bridges/sharedbrain/server.js` — separate sanitization needed (Node, not Python).
 
