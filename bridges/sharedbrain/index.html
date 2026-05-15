@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SharedBrain Gateway</title>
+  <link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />
+  <script src="https://unpkg.com/xterm/lib/xterm.js"></script>
+  <script src="https://unpkg.com/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+  <style>
+      #paste-btn {
+      padding: 10px 24px; border: none; border-radius: 6px;
+      cursor: pointer; font-weight: 700; font-size: 14px;
+      background: #555; color: #fff; white-space: nowrap;
+    }
+    #paste-btn:hover { background: #777; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #333; color: #e0e0e0; padding: 24px; }
+    #login {
+      max-width: 380px; margin: 80px auto; text-align: center;
+      background: #000; border: 1px solid #333; border-radius: 12px; padding: 40px 32px;
+    }
+    #login img { margin-bottom: 24px; }
+    #login h1 { color: #fff; font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+    #login p.subtitle { color: #aaa; font-size: 13px; margin-bottom: 28px; }
+    
+	
+#login input, #login select {
+      width: 100%; padding: 11px 14px; margin: 6px 0;
+      background: #333; border: 1px solid #555; color: #fff;
+      border-radius: 6px; font-size: 14px; outline: none;
+      appearance: none; cursor: pointer;
+    }
+	
+	
+    #login input:focus { border-color: #aaa; }
+    #login input::placeholder { color: #888; }
+    #login button {
+      width: 100%; padding: 11px; margin-top: 14px;
+      background: #fff; color: #000; border: none;
+      border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px;
+    }
+    #login button:hover { background: #ddd; }
+    #login-error { color: #ff6b6b; font-size: 13px; margin-top: 12px; }
+    #app { display: none; max-width: 1100px; margin: 0 auto; }
+    #top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #333;
+    }
+    #top-bar .left { display: flex; align-items: center; gap: 14px; }
+    #top-bar h1 { color: #fff; font-size: 18px; font-weight: 600; }
+    #status-bar {
+      padding: 9px 16px; border-radius: 6px; margin-bottom: 12px;
+      font-size: 13px; background: #2a2a2a; border: 1px solid #333;
+    }
+    #status-bar.mine  { border-left: 3px solid #fff; color: #fff; }
+    #status-bar.other { border-left: 3px solid #666; color: #aaa; }
+    #status-bar.free  { border-left: 3px solid #555; color: #888; }
+    #terminal-container {
+      background: #0a0a0a; border: 1px solid #333; border-radius: 8px;
+      padding: 10px; margin-bottom: 12px; height: 500px; overflow: hidden;
+    }
+    #bottom-row { display: flex; gap: 10px; align-items: center; }
+    #take-btn {
+      padding: 10px 24px; border: none; border-radius: 6px;
+      cursor: pointer; font-weight: 700; font-size: 14px;
+      background: #fff; color: #000; white-space: nowrap;
+    }
+    #take-btn:hover { background: #ddd; }
+    #take-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+    #compact-btn {
+      padding: 10px 24px; border: none; border-radius: 6px;
+      cursor: pointer; font-weight: 700; font-size: 14px;
+      background: #d68910; color: #fff; white-space: nowrap;
+      margin-left: auto;
+    }
+    #compact-btn:hover { background: #e67e22; }
+    #compact-btn:disabled { background: #6e4a14; color: #999; cursor: not-allowed; }
+    #reset-btn {
+      padding: 10px 24px; border: none; border-radius: 6px;
+      cursor: pointer; font-weight: 700; font-size: 14px;
+      background: #c0392b; color: #fff; white-space: nowrap;
+    }
+    #reset-btn:hover { background: #e74c3c; }
+    #reset-btn:disabled { background: #5a2a25; color: #999; cursor: not-allowed; }
+    #watch-note { font-size: 13px; color: #666; }
+    #toast {
+      position: fixed; top: 20px; right: 20px;
+      background: #2a2a2a; color: #ccc; padding: 12px 20px; border-radius: 8px;
+      font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+      border: 1px solid #444; border-left: 3px solid #888;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+<div id="login">
+  <img src="/logo.jpg" style="width:100px;height:100px;object-fit:contain;border-radius:12px;" />
+  <h1>SharedBrain Gateway</h1>
+  <p class="subtitle">LaBrasseur & Reich Investments LLC</p>
+  <select id="name-input">
+    <option value="">Select your name...</option>
+    <option value="Alex">Alex</option>
+    <option value="Shawn">Shawn</option>
+  </select>
+  <input type="password" id="token-input" placeholder="Access token" />
+  <button onclick="connect()">Connect</button>
+  <p id="login-error"></p>
+</div>
+<div id="app">
+  <div id="top-bar">
+    <div class="left">
+      <img src="/logo.jpg" style="height:42px;width:42px;object-fit:contain;border-radius:8px;" />
+      <h1>SharedBrain Gateway</h1>
+    </div>
+    <span id="users-bar" style="font-size:12px;color:#666;"></span>
+  </div>
+  <div id="status-bar" class="free">Shell is free — click Take Control to begin</div>
+  <div id="terminal-container"></div>
+<div id="bottom-row">
+    <button id="take-btn" onclick="takeControl()">Take Control</button>
+    <button id="paste-btn" onclick="pasteFromClipboard()">Paste</button>
+    <span id="watch-note"></span>
+    <button id="compact-btn" onclick="compactClaude()" title="Soft reset: run /compact to summarize and free Eve's context window. She keeps everything she knows; just lighter on the back end. Try this first when she's slow.">Compact</button>
+    <button id="reset-btn" onclick="resetClaude()" title="Hard reset: kill the current Claude session and relaunch in bypass mode. Use when Compact didn't help.">Reset Eve</button>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+
+async function pasteFromClipboard() {
+    if (!isMine || !ws || ws.readyState !== 1) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      ws.send(JSON.stringify({ type: 'input', data: text }));
+    } catch (e) {
+      alert('Clipboard access denied — please allow clipboard permissions in your browser.');
+    }
+  }
+  
+  let ws, myName = '', isMine = false, cooldownTimer = null, term, fitAddon;
+
+  function initTerminal() {
+    term = new Terminal({
+      theme: { background: '#0a0a0a', foreground: '#e0e0e0' },
+      fontFamily: 'Consolas, "Courier New", monospace',
+      fontSize: 14,
+      convertEol: true,
+    });
+    fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal-container'));
+    fitAddon.fit();
+
+term.onKey(({ key }) => {
+      if (isMine && ws && ws.readyState === 1)
+        ws.send(JSON.stringify({ type: 'input', data: key }));
+    });
+
+    document.getElementById('terminal-container').addEventListener('paste', (e) => {
+      if (isMine && ws && ws.readyState === 1) {
+        const text = e.clipboardData.getData('text');
+        ws.send(JSON.stringify({ type: 'input', data: text }));
+        e.preventDefault();
+      }
+    });
+
+    function sendSize() {
+      if (ws && ws.readyState === 1)
+        ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+    }
+    term.onResize(sendSize);
+    window.addEventListener('resize', () => { fitAddon.fit(); sendSize(); });
+    setTimeout(() => { fitAddon.fit(); sendSize(); }, 200);
+  }
+
+  function connect() {
+    myName = document.getElementById('name-input').value.trim();
+    const token = document.getElementById('token-input').value.trim();
+    if (!myName || !token) {
+      document.getElementById('login-error').textContent = 'Please enter your name and token.';
+      return;
+    }
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}/?token=${encodeURIComponent(token)}&name=${encodeURIComponent(myName)}`);
+    
+    ws.onopen = () => {
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      initTerminal();
+      // Heartbeat to keep connection alive
+      setInterval(() => {
+        if (ws && ws.readyState === 1) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000);
+    };
+	
+	ws.onclose = (e) => {
+      if (e.code === 1008) {
+        document.getElementById('login-error').textContent = 'Invalid token.';
+        document.getElementById('login').style.display = 'block';
+        document.getElementById('app').style.display = 'none';
+      } else if (term) {
+        term.writeln('\r\n\x1b[90mDisconnected — please refresh.\x1b[0m');
+      }
+    };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'output') term.write(msg.data);
+      if (msg.type === 'control') handleControlUpdate(msg);
+    };
+  }
+
+  function takeControl() {
+    if (ws && ws.readyState === 1)
+      ws.send(JSON.stringify({ type: 'take_control' }));
+  }
+
+  async function compactClaude() {
+    if (!confirm('Compact Eve\'s conversation?\n\nThis runs the /compact slash command — Eve summarizes the recent conversation and frees up her context window. She keeps everything she knows; nothing is lost. Try this first when she\'s slow. Takes a few seconds.')) return;
+    const btn = document.getElementById('compact-btn');
+    btn.disabled = true;
+    btn.textContent = 'Compacting…';
+    try {
+      const token = document.getElementById('token-input').value.trim();
+      const res = await fetch('/compact-claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, name: myName }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(data.message || 'Eve is compacting…');
+      } else {
+        showToast('Compact failed: ' + (data.error || 'unknown'));
+      }
+    } catch (e) {
+      showToast('Compact failed: ' + e.message);
+    }
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = 'Compact';
+    }, 8000);
+  }
+
+  async function resetClaude() {
+    if (!confirm('Restart Eve?\n\nThis will kill the current Claude session and relaunch her in bypass mode. Use this when she\'s getting slow or unresponsive. Any in-flight work she\'s doing will be lost.')) return;
+    const btn = document.getElementById('reset-btn');
+    btn.disabled = true;
+    btn.textContent = 'Restarting…';
+    try {
+      const token = document.getElementById('token-input').value.trim();
+      const res = await fetch('/reset-claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, name: myName }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(data.message || 'Eve is restarting…');
+      } else {
+        showToast('Reset failed: ' + (data.error || 'unknown'));
+      }
+    } catch (e) {
+      showToast('Reset failed: ' + e.message);
+    }
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = 'Reset Eve';
+    }, 12000);
+  }
+
+  function handleControlUpdate(msg) {
+    const prev = isMine;
+    isMine = msg.isMine;
+    if (!isMine && msg.controlledBy && msg.controlledBy !== myName && prev !== isMine)
+      showToast(`${msg.controlledBy} has taken control`);
+    updateStatus(msg.controlledBy, isMine);
+    startCooldown(msg.cooldownUntil);
+if (isMine && term) {
+      term.focus();
+      setTimeout(() => {
+        ws.send(JSON.stringify({ type: 'input', data: `Hi Eve, this is ${myName} for this session\r\n` }));
+      }, 300);
+    }
+  }
+
+  function updateStatus(controlledBy, mine) {
+    const bar = document.getElementById('status-bar');
+    const note = document.getElementById('watch-note');
+    if (!controlledBy) {
+      bar.className = 'free';
+      bar.textContent = 'Shell is free — click Take Control to begin';
+      note.textContent = '';
+    } else if (mine) {
+      bar.className = 'mine';
+      bar.textContent = 'You are in control — type directly in the terminal';
+      note.textContent = '';
+    } else {
+      bar.className = 'other';
+      bar.textContent = `${controlledBy} is in control — watch mode`;
+      note.textContent = 'Click Take Control to take over';
+    }
+  }
+
+  function startCooldown(until) {
+    const btn = document.getElementById('take-btn');
+    if (cooldownTimer) clearInterval(cooldownTimer);
+    function tick() {
+      const r = until - Date.now();
+      if (r <= 0) { btn.disabled = false; btn.textContent = 'Take Control'; clearInterval(cooldownTimer); }
+      else { btn.disabled = true; btn.textContent = `Wait ${Math.ceil(r / 1000)}s`; }
+    }
+    tick();
+    cooldownTimer = setInterval(tick, 200);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
