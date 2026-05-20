@@ -311,28 +311,104 @@ phase_assemble() {
   ok "CLAUDE.md assembled at ${VAULT}/"
 }
 
+# ─── Phase L1 — registration token + quick tunnel ────────────────────────────
+# Generates the bearer secret the box uses against the dashboard's
+# /api/box/sync, and starts a Cloudflare quick tunnel pointing at the
+# WhatsApp bridge port (8080). The tunnel URL + token are what the
+# operator pastes into /admin → Register Box.
+phase_register() {
+  phase "Phase L1 — registration token + cloudflare quick tunnel"
+
+  local config_dir="${EVE_HOME}/.config/eve"
+  local token_file="${config_dir}/registration.token"
+  local tunnel_file="${config_dir}/tunnel.url"
+
+  mkdir -p "${config_dir}"
+  chmod 700 "${config_dir}"
+
+  if [[ -f "${token_file}" ]]; then
+    ok "registration token already exists at ${token_file} (re-using)"
+  else
+    info "Generating 32-byte registration token..."
+    head -c 32 /dev/urandom | xxd -p -c 64 > "${token_file}"
+    chmod 600 "${token_file}"
+    ok "registration token written to ${token_file}"
+  fi
+
+  # Cloudflare "quick tunnel" — no account required, gives an ephemeral
+  # https://*.trycloudflare.com URL pointed at localhost:8080. PM2 will
+  # supervise the tunnel daemon so it restarts on reboot, but the URL
+  # changes whenever cloudflared restarts (quick-tunnel limitation). For
+  # a stable URL the customer can graduate to a named tunnel later.
+  if pm2 describe cloudflared-quick >/dev/null 2>&1; then
+    ok "cloudflared-quick tunnel already supervised by PM2"
+  else
+    info "Starting cloudflared quick tunnel under PM2..."
+    pm2 start --name cloudflared-quick --silent \
+      cloudflared -- tunnel --url http://localhost:8080 || \
+      warn "pm2 start cloudflared-quick failed (run manually if needed)"
+    pm2 save --force >/dev/null 2>&1 || true
+  fi
+
+  info "Waiting up to 30s for cloudflared to emit a tunnel URL..."
+  local found_url=""
+  for _ in $(seq 1 30); do
+    sleep 1
+    # Quick tunnels print "Your quick Tunnel has been created! Visit it at:"
+    # followed by the URL. We grep PM2's stdout/err log for it.
+    found_url=$(pm2 logs cloudflared-quick --nostream --lines 200 2>/dev/null | \
+      grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | tail -n 1)
+    if [[ -n "${found_url}" ]]; then break; fi
+  done
+
+  if [[ -n "${found_url}" ]]; then
+    echo "${found_url}" > "${tunnel_file}"
+    chmod 600 "${tunnel_file}"
+    ok "tunnel URL captured: ${found_url}"
+  else
+    warn "couldn't capture a tunnel URL from cloudflared logs in 30s"
+    warn "run 'pm2 logs cloudflared-quick' and copy the trycloudflare URL manually"
+  fi
+}
+
 # ─── Phase M — final notes ───────────────────────────────────────────────────
 phase_final() {
   phase "Phase M — vendor parity reached; next steps for the operator"
 
-  cat <<'EOF'
+  local token_file="${EVE_HOME}/.config/eve/registration.token"
+  local tunnel_file="${EVE_HOME}/.config/eve/tunnel.url"
 
-Vendor-layer install complete. This box is now at parity with the L&R
-reference box (minus the instance-layer: persona, OAuth, WhatsApp pairing,
-vault content, credentials).
+  echo ""
+  echo "═══════════════════════════════════════════════════════════════════"
+  echo " REGISTER THIS BOX IN THE DASHBOARD"
+  echo "═══════════════════════════════════════════════════════════════════"
+  echo ""
+  if [[ -f "${token_file}" ]]; then
+    echo "  Registration token: $(cat "${token_file}")"
+  else
+    echo "  Registration token: (missing — Phase L1 failed)"
+  fi
+  if [[ -f "${tunnel_file}" ]]; then
+    echo "  Tunnel URL:         $(cat "${tunnel_file}")"
+  else
+    echo "  Tunnel URL:         (not captured — check pm2 logs cloudflared-quick)"
+  fi
+  echo ""
+  echo "  → Paste both into https://dashboard.executivevirtualentity.com/admin"
+  echo "    (Boxes section → + Register box)"
+  echo ""
+  echo "  Once a customer is assigned to this box on /admin, eve-sync"
+  echo "  (cron, runs every minute) will pull their personalization and"
+  echo "  apply it to ~/.config/eve/instance.env automatically."
+  echo "═══════════════════════════════════════════════════════════════════"
 
-To reach a fully-running instance, the customer dashboard (Phase 2.5) wires:
-  1) Google Workspace OAuth → tokens land in ~/.google_workspace_mcp/credentials/
-  2) WhatsApp QR pairing → whatsapp-mcp/whatsapp-bridge stores session
-  3) Cloudflared tunnel auth → ~/.cloudflared/<tunnel-id>.json
-  4) Tailscale auth → sudo tailscale up
-  5) CLAUDE.user.md populated with team info → run assemble-claude.sh
-  6) cron entries enabled (see cron/eve-cron.crontab.template once created)
-  7) PM2 services started (see systemd/pm2-eve.service template once created)
+  cat <<EOF
 
-Until the dashboard is built, the operator does these manually (matching how
-the L&R box was originally set up). Refer to the L&R Eve box for the canonical
-known-good config.
+Other one-time tasks the operator/customer still does:
+  • Google Workspace OAuth — handled by the customer in /app
+  • WhatsApp QR pairing — handled by the customer in /app
+  • Tailscale auth — sudo tailscale up (for remote ops)
+  • Cron entries — crontab ${REPO_DIR}/cron/eve-cron.crontab.template
 
 Log of this install: ${LOG_FILE}
 EOF
@@ -355,6 +431,7 @@ main() {
   phase_whatsapp_mcp
   phase_skeleton
   phase_assemble
+  phase_register
   phase_final
 
   echo ""
