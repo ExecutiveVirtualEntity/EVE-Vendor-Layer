@@ -40,6 +40,13 @@ PATH=/home/eve/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbi
 # uncomments below + adjusts cadence model when ready to enable.
 # */15 * * * * /usr/bin/python3 /home/eve/.local/eve-tools/pulse_outreach.py >> /home/eve/.local/eve-tools/cron-outreach.log 2>&1
 
+# ─── eve-sync (pull config from dashboard) ──────────────────────────────────
+# Every minute: bearer-auth POST to /api/box/sync, applies persona/voice/
+# vault changes the customer set on /app to ~/.config/eve/instance.env.
+# Cheap (one indexed query); no-ops if nothing changed. Exits cleanly with
+# code 1 if this box hasn't been registered yet (no token file).
+* * * * * /usr/bin/python3 /home/eve/.local/eve-tools/eve_sync.py >> /home/eve/.local/eve-tools/cron-sync.log 2>&1
+
 # ─── eve-update (auto-pull from vendor git) ─────────────────────────────────
 # Pull + apply vendor-layer updates daily at 4am (after backups complete).
 # Vendor pushes a tag/commit; this picks it up within 24h. Comment out for
